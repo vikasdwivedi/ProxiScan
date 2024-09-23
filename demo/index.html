@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxiScan Test Page</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #4c6ef5, #15aabf);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        .form-control, .form-select {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: none;
+            outline: none;
+            border: 1px solid #4c6ef5;
+        }
+        .btn-custom {
+            background-color: #15aabf;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #fff;
+        }
+        .btn-custom:hover {
+            background-color: #0c8599;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="text-center mb-4">ProxiScan Test Page</h1>
+        
+        <!-- Form to input datasets and options -->
+        <form id="testForm">
+            <div class="mb-3">
+                <label for="dataset1" class="form-label">Dataset 1 (comma-separated points)</label>
+                <textarea class="form-control" id="dataset1" rows="3">[1,2], [3,4], [5,6]</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="dataset2" class="form-label">Dataset 2 (comma-separated points)</label>
+                <textarea class="form-control" id="dataset2" rows="3">[1.1,2.1], [3.5,4.2], [7,8]</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="scanRadius" class="form-label">Scan Radius</label>
+                <input type="number" class="form-control" id="scanRadius" value="0.5">
+            </div>
+            <div class="mb-3">
+                <label for="dimensions" class="form-label">Dimensions</label>
+                <select class="form-select" id="dimensions">
+                    <option value="2">2D</option>
+                    <option value="3">3D</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-custom w-100" onclick="runProxiScan()">Run ProxiScan</button>
+        </form>
+
+        <!-- Result Box -->
+        <div class="result-box mt-4">
+            <h2>Results:</h2>
+            <p id="resultText">Enter datasets and click "Run ProxiScan" to see the results.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (for better responsiveness) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ProxiScan Library (External Script) -->
+    <script src="../proxiscan.js"></script>
+
+    <!-- Custom Script to Handle Test Input and Run ProxiScan -->
+    <script>
+        function parseDataset(input, dimensions) {
+            // Split the input by commas, spaces, or new lines and trim any extra spaces
+            const points = input
+                .replace(/[\[\]\(\)]/g, '') // Remove any unwanted characters like brackets or parentheses
+                .split(/\s*,\s*/)            // Split by commas, trimming extra spaces
+                .map(Number);                // Convert all elements to numbers
+
+            // Group the flat array into chunks based on the specified dimensions (2D or 3D)
+            let dataset = [];
+            for (let i = 0; i < points.length; i += dimensions) {
+                const point = points.slice(i, i + dimensions);
+
+                // Only add valid points (those that have the right number of dimensions and are numbers)
+                if (point.length === dimensions && point.every(num => !isNaN(num))) {
+                    dataset.push(point);
+                }
+            }
+
+            // Check if the resulting dataset is non-empty, otherwise throw an error
+            if (dataset.length === 0) {
+                throw new Error("Invalid dataset: must be a non-empty array.");
+            }
+
+            return dataset;
+        }
+
+        function runProxiScan() {
+            try {
+                const dataset1Input = document.getElementById('dataset1').value;
+                const dataset2Input = document.getElementById('dataset2').value;
+                const scanRadius = parseFloat(document.getElementById('scanRadius').value);
+                const dimensions = parseInt(document.getElementById('dimensions').value);
+
+                 // Parse datasets based on selected dimensions
+                const dataset1 = parseDataset(dataset1Input, dimensions);
+                const dataset2 = parseDataset(dataset2Input, dimensions);   
+
+                const result = ProxiScan.calculateSimilarity(dataset1, dataset2, scanRadius, dimensions);
+
+                document.getElementById('resultText').innerHTML = `
+                    <strong>Matched Points:</strong> ${result.matchedPoints}<br>
+                    <strong>Total Points:</strong> ${result.totalPoints}<br>
+                    <strong>Similarity Score:</strong> ${result.similarityScore.toFixed(3)}
+                `;
+            } catch (error) {
+                document.getElementById('resultText').innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+
+</body>
+</html>

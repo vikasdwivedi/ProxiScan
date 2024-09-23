@@ -1,0 +1,35 @@
+{
+  "name": "proxiscan",
+  "version": "1.0.0",
+  "description": "ProxiScan is a lightweight JavaScript library for comparing two datasets of points in 2D or 3D coordinate space. It calculates similarity scores based on proximity within a user-defined radius.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "uglifyjs image.map.resizer.js -o image.map.resizer.min.js",
+    "start": "live-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikasdwivedi/ProxiScan.git"
+  },
+  "keywords": [
+    "Javascript",
+    "Similarity",
+    "Score",
+    "3D",
+    "and",
+    "2D",
+    "Scan",
+    "Euclidean"
+  ],
+  "author": "Vikas Dwivedi (https://www.linkedin.com/in/vikasdwivedi92)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vikasdwivedi/ProxiScan/issues"
+  },
+  "homepage": "https://github.com/vikasdwivedi/ProxiScan#readme",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "uglify-js": "^3.19.3"
+  }
+}
