@@ -1,8 +1,11 @@
+/*
+* Copyright (c) 2024 Vikas Dwivedi
+* Licensed under the MIT license
+*/
+
 (function(global) {
-    // ProxiScan object to store public methods
     const ProxiScan = {};
 
-    // Error handler for invalid datasets
     function validateDataset(dataset, dimensions) {
         if (!Array.isArray(dataset) || dataset.length === 0) {
             throw new Error("Invalid dataset: must be a non-empty array.");
@@ -14,7 +17,6 @@
             }
         });
     }
-
     // Function to calculate the Euclidean distance between two points in 2D space
     function calculateDistance2D(point1, point2) {
         return Math.sqrt(Math.pow(point2[0] - point1[0], 2) + Math.pow(point2[1] - point1[1], 2));
@@ -26,55 +28,75 @@
     }
 
     // Main function to calculate similarity score for 2D or 3D space
-    ProxiScan.calculateSimilarity = function(dataset1, dataset2, scanRadius, dimensions = 2) {
-        // Validate inputs
-        if (typeof scanRadius !== "number" || scanRadius <= 0) {
-            throw new Error("Invalid scanRadius: must be a positive number.");
-        }
 
-        if (![2, 3].includes(dimensions)) {
-            throw new Error("Invalid dimensions: only 2 and 3 are supported.");
-        }
-
+    ProxiScan.calculateMultiDatasetSimilarity = function(masterDataset, testDatasets, scanRadius, dimensions = 2, useAndCondition = true) {
         // Validate datasets
-        validateDataset(dataset1, dimensions);
-        validateDataset(dataset2, dimensions);
+        validateDataset(masterDataset, dimensions);
+        testDatasets.forEach(testDataset => validateDataset(testDataset, dimensions));
 
         let matchedPoints = 0;
-        let usedPoints = new Set();
+        let matchedPairs = []; // To store matched points with corresponding matches in all datasets
 
-        // Choose the correct distance calculation function based on dimensions (2 or 3)
+        // Choose the correct distance calculation function based on dimensions (2D or 3D)
         const calculateDistance = dimensions === 3 ? calculateDistance3D : calculateDistance2D;
 
-        // Iterate through each point in dataset1
-        dataset1.forEach(point1 => {
-            for (let i = 0; i < dataset2.length; i++) {
-                if (!usedPoints.has(i)) {
-                    let point2 = dataset2[i];
-                    let distance = calculateDistance(point1, point2);
+        // Iterate through each point in the master dataset
+        masterDataset.forEach(masterPoint => {
+            let pointMatches = []; // To store matches from test datasets for the current master point
+            let matchFound = useAndCondition; // AND condition requires matching all datasets, OR requires any
 
-                    // If the distance is within the scanRadius, count it as a match
+            // Check if the point in the master dataset matches in each test dataset
+            for (let datasetIndex = 0; datasetIndex < testDatasets.length; datasetIndex++) {
+                let testDataset = testDatasets[datasetIndex];
+                let matchedInDataset = false;
+
+                for (let i = 0; i < testDataset.length; i++) {
+                    let testPoint = testDataset[i];
+                    let distance = calculateDistance(masterPoint, testPoint);
+
                     if (distance <= scanRadius) {
-                        matchedPoints++;
-                        usedPoints.add(i); // Mark this point as used
-                        break; // Exit loop after finding the first match for this point
+                        pointMatches.push({ datasetIndex, testPoint });
+                        matchedInDataset = true;
+                        break; // Stop searching after finding the first match in the current dataset
                     }
                 }
+
+                if (useAndCondition) {
+                    // If using AND condition and there's no match in one dataset, break the loop
+                    if (!matchedInDataset) {
+                        matchFound = false;
+                        break;
+                    }
+                } else {
+                    // If using OR condition, we just need one match
+                    if (matchedInDataset) {
+                        matchFound = true;
+                        break;
+                    }
+                }
+            }
+
+            // If match criteria are met (either AND or OR), record the match
+            if (matchFound) {
+                matchedPoints++;
+                matchedPairs.push({
+                    masterPoint,
+                    matches: pointMatches.map(match => ({ testDatasetIndex: match.datasetIndex, testPoint: match.testPoint }))
+                });
             }
         });
 
         // Calculate the similarity score
-        const maxPoints = Math.max(dataset1.length, dataset2.length);
+        const maxPoints = masterDataset.length;
         const similarityScore = matchedPoints / maxPoints;
 
         return {
             matchedPoints: matchedPoints,
             totalPoints: maxPoints,
-            similarityScore: similarityScore
+            similarityScore: similarityScore,
+            matchedPairs: matchedPairs // Return the matched pairs of points across datasets
         };
     };
 
-    // Expose ProxiScan to the global object (but not directly in the global namespace)
     global.ProxiScan = ProxiScan;
-
 })(typeof window !== "undefined" ? window : global);

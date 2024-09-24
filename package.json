@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "uglifyjs image.map.resizer.js -o image.map.resizer.min.js",
+    "build": "uglifyjs proxiscan.js -o proxiscan.min.js",
     "start": "live-server"
   },
   "repository": {
