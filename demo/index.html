@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProxiScan Multi-Dataset Demo</title>
+    <title>ProxiScan Multi-Master Dataset Test Page</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom Styles -->
@@ -71,21 +71,35 @@
 <body>
 
     <div class="container">
-        <h1 class="text-center mb-4">ProxiScan Multi-Dataset Demo</h1>
+        <h1 class="text-center mb-4">ProxiScan Multi-Master Dataset Test Page</h1>
         
-        <!-- Form to input master dataset and test datasets -->
+        <!-- Form to input multiple master datasets -->
         <form id="testForm">
-            <div class="mb-3">
-                <label for="masterDataset" class="form-label">Master Dataset (comma-separated points)</label>
-                <textarea class="form-control" id="masterDataset" rows="3">[1,2], [3,4], [5,6]</textarea>
+            <div id="masterDatasetsContainer">
+                <div class="mb-3">
+                    <label for="masterDataset1" class="form-label">Master Dataset 1 (comma-separated points)</label>
+                    <textarea class="form-control" id="masterDataset1" rows="3">[1,2], [3,4], [5,6]</textarea>
+                </div>
             </div>
 
+            <!-- Button to add more master datasets -->
+            <button type="button" class="btn btn-secondary mb-3" onclick="addMasterDataset()">Add Master Dataset</button>
+
+            <div class="mb-3">
+                <label for="acceptancePercentage" class="form-label">Acceptance Percentage</label>
+                <input type="number" class="form-control" id="acceptancePercentage" value="75">
+            </div>
+
+            <!-- Test Datasets Section -->
             <div id="testDatasetsContainer">
                 <div class="mb-3">
                     <label for="testDataset1" class="form-label">Test Dataset 1 (comma-separated points)</label>
                     <textarea class="form-control" id="testDataset1" rows="3">[1.1,2.1], [3.5,4.2], [7,8]</textarea>
                 </div>
             </div>
+
+            <!-- Button to add more test datasets -->
+            <button type="button" class="btn btn-secondary mb-3" onclick="addTestDataset()">Add Test Dataset</button>
 
             <div class="mb-3">
                 <label for="scanRadius" class="form-label">Scan Radius</label>
@@ -107,9 +121,6 @@
                 </select>
             </div>
 
-            <!-- Button to add more test datasets -->
-            <button type="button" class="btn btn-secondary mb-3" onclick="addTestDataset()">Add Test Dataset</button>
-
             <!-- Button to run ProxiScan -->
             <button type="button" class="btn btn-custom w-100" onclick="runProxiScan()">Run ProxiScan</button>
         </form>
@@ -129,7 +140,21 @@
 
     <!-- Custom Script to Handle Test Input and Run ProxiScan -->
     <script>
+        let masterDatasetCount = 1;
         let testDatasetCount = 1;
+
+        // Function to add a new master dataset textarea dynamically
+        function addMasterDataset() {
+            masterDatasetCount++;
+            const container = document.getElementById('masterDatasetsContainer');
+            const newDatasetDiv = document.createElement('div');
+            newDatasetDiv.classList.add('mb-3');
+            newDatasetDiv.innerHTML = `
+                <label for="masterDataset${masterDatasetCount}" class="form-label">Master Dataset ${masterDatasetCount} (comma-separated points)</label>
+                <textarea class="form-control" id="masterDataset${masterDatasetCount}" rows="3"></textarea>
+            `;
+            container.appendChild(newDatasetDiv);
+        }
 
         // Function to add a new test dataset textarea dynamically
         function addTestDataset() {
@@ -169,13 +194,17 @@
         // Function to run ProxiScan
         function runProxiScan() {
             try {
-                const masterDatasetInput = document.getElementById('masterDataset').value;
                 const scanRadius = parseFloat(document.getElementById('scanRadius').value);
                 const dimensions = parseInt(document.getElementById('dimensions').value);
                 const useAndCondition = document.getElementById('matchCondition').value === 'true';
+                const acceptancePercentage = parseFloat(document.getElementById('acceptancePercentage').value);
 
-                // Parse master dataset
-                const masterDataset = parseDataset(masterDatasetInput, dimensions);
+                // Parse master datasets
+                const masterDatasets = [];
+                for (let i = 1; i <= masterDatasetCount; i++) {
+                    const masterDatasetInput = document.getElementById(`masterDataset${i}`).value;
+                    masterDatasets.push(parseDataset(masterDatasetInput, dimensions));
+                }
 
                 // Parse test datasets
                 const testDatasets = [];
@@ -184,8 +213,15 @@
                     testDatasets.push(parseDataset(testDatasetInput, dimensions));
                 }
 
-                // Run ProxiScan multi-dataset comparison
-                const result = ProxiScan.calculateMultiDatasetSimilarity(masterDataset, testDatasets, scanRadius, dimensions, useAndCondition);
+                // Run ProxiScan multi-master dataset comparison
+                const result = ProxiScan.calculateMultiMasterDatasetSimilarity(
+                    masterDatasets,
+                    testDatasets,
+                    scanRadius,
+                    dimensions,
+                    useAndCondition,
+                    acceptancePercentage
+                );
 
                 // Display the results
                 let resultHTML = `

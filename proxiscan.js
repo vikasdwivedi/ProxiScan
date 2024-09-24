@@ -21,17 +21,60 @@
     function calculateDistance2D(point1, point2) {
         return Math.sqrt(Math.pow(point2[0] - point1[0], 2) + Math.pow(point2[1] - point1[1], 2));
     }
-
     // Function to calculate the Euclidean distance between two points in 3D space
     function calculateDistance3D(point1, point2) {
         return Math.sqrt(Math.pow(point2[0] - point1[0], 2) + Math.pow(point2[1] - point1[1], 2) + Math.pow(point2[2] - point1[2], 2));
     }
 
-    // Main function to calculate similarity score for 2D or 3D space
+    function mergeMasterDatasets(masterDatasets, scanRadius, dimensions, acceptancePercentage) {
+        const mergedMasterDataset = [];
+        const pointOccurrences = new Map(); // Map to track occurrences of similar points
 
-    ProxiScan.calculateMultiDatasetSimilarity = function(masterDataset, testDatasets, scanRadius, dimensions = 2, useAndCondition = true) {
-        // Validate datasets
-        validateDataset(masterDataset, dimensions);
+        const calculateDistance = dimensions === 3 ? calculateDistance3D : calculateDistance2D;
+
+        // Calculate the threshold for how many datasets a point must appear in to be accepted
+        const totalDatasets = masterDatasets.length;
+        const acceptanceThreshold = Math.ceil((acceptancePercentage / 100) * totalDatasets);
+
+        // Iterate over all points in each master dataset and count occurrences of points within the scanRadius
+        masterDatasets.forEach(dataset => {
+            dataset.forEach(point1 => {
+                let foundSimilar = false;
+
+                for (let [existingPoint, count] of pointOccurrences) {
+                    let distance = calculateDistance(existingPoint, point1);
+                    if (distance <= scanRadius) {
+                        pointOccurrences.set(existingPoint, count + 1); // Increment occurrence count for similar point
+                        foundSimilar = true;
+                        break;
+                    }
+                }
+
+                if (!foundSimilar) {
+                    // Add point1 as a new entry in the map with an occurrence count of 1
+                    pointOccurrences.set(point1, 1);
+                }
+            });
+        });
+
+        // Include only those points in the final master dataset that meet the acceptance threshold
+        for (let [point, count] of pointOccurrences) {
+            if (count >= acceptanceThreshold) {
+                mergedMasterDataset.push(point);
+            }
+        }
+
+        return mergedMasterDataset;
+    }
+
+    ProxiScan.calculateMultiMasterDatasetSimilarity = function(masterDatasets, testDatasets, scanRadius, dimensions = 2, useAndCondition = true, acceptancePercentage = 100) {
+        // Validate master datasets
+        masterDatasets.forEach(dataset => validateDataset(dataset, dimensions));
+
+        // Merge the master datasets based on the acceptance percentage
+        const finalMasterDataset = mergeMasterDatasets(masterDatasets, scanRadius, dimensions, acceptancePercentage);
+
+        // Validate test datasets
         testDatasets.forEach(testDataset => validateDataset(testDataset, dimensions));
 
         let matchedPoints = 0;
@@ -40,12 +83,12 @@
         // Choose the correct distance calculation function based on dimensions (2D or 3D)
         const calculateDistance = dimensions === 3 ? calculateDistance3D : calculateDistance2D;
 
-        // Iterate through each point in the master dataset
-        masterDataset.forEach(masterPoint => {
+        // Iterate through each point in the final master dataset
+        finalMasterDataset.forEach(masterPoint => {
             let pointMatches = []; // To store matches from test datasets for the current master point
             let matchFound = useAndCondition; // AND condition requires matching all datasets, OR requires any
 
-            // Check if the point in the master dataset matches in each test dataset
+            // Check if the point in the final master dataset matches in each test dataset
             for (let datasetIndex = 0; datasetIndex < testDatasets.length; datasetIndex++) {
                 let testDataset = testDatasets[datasetIndex];
                 let matchedInDataset = false;
@@ -87,7 +130,7 @@
         });
 
         // Calculate the similarity score
-        const maxPoints = masterDataset.length;
+        const maxPoints = finalMasterDataset.length;
         const similarityScore = matchedPoints / maxPoints;
 
         return {
