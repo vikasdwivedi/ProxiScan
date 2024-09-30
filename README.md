@@ -14,6 +14,10 @@
 - **Similarity Scoring**: Computes a similarity score based on the proportion of matched points.
 - **Detailed Results**: Return not just the similarity score, but also detailed information on matched pairs, including which datasets the points matched in.
 
+## Demo
+ 
+ Check out the demo [here](https://vikasdwivedi.github.io/proxiscan/).
+
 ## Installation
 
 You can include the **ProxiScan** library in your project by downloading it or installing it via npm (if published):
